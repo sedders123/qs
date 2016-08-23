@@ -1,6 +1,7 @@
 import click
 import os
 import json
+from typing import List
 
 
 def _load_config() -> None:
@@ -11,14 +12,23 @@ def _load_config() -> None:
         config = _create_config()
     return config
 
+
 def _config_exists() -> None:
     if os.path.isfile('config.json'):
-        return true
+        return True
     else:
-        return false
+        return False
+
 
 def _create_config() -> None:
     config = {'BASE_DIR': os.path.expanduser("~/Projects")}
+    with open('config.json', 'w') as f:
+        json.dump(config, f)
+    return config
+
+
+def _get_sub_dirs(base_dir: str) -> List[str]:
+    return list(filter(lambda x: os.path.isdir(os.path.join(base_dir, x)), os.listdir(base_dir)))
 
 
 @click.group(invoke_without_command=True)
@@ -31,6 +41,3 @@ def main(ctx, base_dir):
         config["BASE_DIR"] = base_dir
     else:
         click.echo(ctx.get_help())
-
-def get_sub_dirs(base_dir: string) -> List:
-    return list(filter(lambda x: os.path.isdir(os.path.join(base_dir, x)), os.listdir(base_dir)))
