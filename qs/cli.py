@@ -3,10 +3,12 @@ import os
 import json
 from typing import List
 
+CONFIG_PATH = click.get_app_dir("qs") + "config.json"
+
 
 def _load_config() -> None:
     if _config_exists():
-        with open('config.json', 'r') as f:
+        with open(CONFIG_PATH, 'r') as f:
             config = json.load(f)
     else:
         config = _create_config()
@@ -14,7 +16,7 @@ def _load_config() -> None:
 
 
 def _config_exists() -> None:
-    if os.path.isfile('config.json'):
+    if os.path.isfile(CONFIG_PATH):
         return True
     else:
         return False
@@ -32,12 +34,14 @@ def _get_sub_dirs(base_dir: str) -> List[str]:
 
 
 @click.group(invoke_without_command=True)
-@click.option('--base-dir', '-p', is_flag=True, help='Base Projects Folder')
 @click.pass_context
 def main(ctx, base_dir):
     """A simple CLI to aid in common, repetitive development tasks"""
+
+
+@click.command()
+@click.option('--base-dir', '-p', is_flag=True, help='Base Projects Folder')
+def config(ctx, base_dir):
     config = _load_config()
     if base_dir:
         config["BASE_DIR"] = base_dir
-    else:
-        click.echo(ctx.get_help())
