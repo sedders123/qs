@@ -33,7 +33,7 @@ def _get_sub_dirs(base_dir: str) -> List[str]:
     return list(filter(lambda x: os.path.isdir(os.path.join(base_dir, x)), os.listdir(base_dir)))
 
 
-@click.group(invoke_without_command=True)
+@click.group()
 @click.pass_context
 def main(ctx):
     """A simple CLI to aid in common, repetitive development tasks"""
