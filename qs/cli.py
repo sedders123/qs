@@ -35,13 +35,18 @@ def _get_sub_dirs(base_dir: str) -> List[str]:
 
 @click.group(invoke_without_command=True)
 @click.pass_context
-def main(ctx, base_dir):
+def main(ctx):
     """A simple CLI to aid in common, repetitive development tasks"""
+    config = _load_config()
 
 
-@click.command()
+@main.command()
 @click.option('--base-dir', '-p', is_flag=True, help='Base Projects Folder')
 def config(ctx, base_dir):
     config = _load_config()
     if base_dir:
         config["BASE_DIR"] = base_dir
+
+@main.command()
+def test():
+    click.echo(os.getcwd())
