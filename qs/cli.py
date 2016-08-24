@@ -5,6 +5,18 @@ from typing import List
 
 CONFIG_PATH = click.get_app_dir("qs") + "config.json"
 
+class cd:
+    """Context manager for changing the current working directory"""
+    def __init__(self, newPath):
+        self.newPath = os.path.expanduser(newPath)
+
+    def __enter__(self):
+        self.savedPath = os.getcwd()
+        os.chdir(self.newPath)
+
+    def __exit__(self, etype, value, traceback):
+        os.chdir(self.savedPath)
+
 
 def _load_config() -> None:
     if _config_exists():
@@ -36,10 +48,22 @@ def _get_sub_dirs(base_dir: str) -> List[str]:
 def _get_git_repos(dirs: List[str], base_dir: str) -> List[str]:
     repos = []
     for directory in dirs:
-        path = os.path.join(base_dir, directory + ".git/")
+        path = os.path.join(base_dir, directory + "/.git/")
         if os.path.isdir(path):
-            repos.append(directory)
+            repos.append(base_dir + "/" + directory)
     return repos
+
+def _parse_git_branch(raw_branch: str):
+    pass
+
+def _sync_repos(repos: List[str]):
+    #for repo in repos:
+    #    with cd(repo):
+    #        click.echo(str(os.system("git status | head -1")))
+    with cd(repos[0]):
+        raw_branch = str(os.system("git status | head -1"))
+        branch = _parse_git_branch(raw_branch)
+
 
 @click.group()
 @click.pass_context
@@ -61,7 +85,8 @@ def config(ctx, base_dir):
 def sync(ctx):
     base_dir = ctx.obj['CONFIG']['BASE_DIR']
     dirs = _get_sub_dirs(base_dir)
-    git_repos = _get_git_repos(dirs, base_dir)
+    repos = _get_git_repos(dirs, base_dir)
+    _sync_repos(repos)
 
 @main.command()
 def test():
