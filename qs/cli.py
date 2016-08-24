@@ -32,9 +32,14 @@ def _create_config() -> None:
 def _get_sub_dirs(base_dir: str) -> List[str]:
     return list(filter(lambda x: os.path.isdir(os.path.join(base_dir, x)), os.listdir(base_dir)))
 
-def _get_git_repos(dirs: List[str], base_dir: str) -> List[str]:
-    pass
 
+def _get_git_repos(dirs: List[str], base_dir: str) -> List[str]:
+    repos = []
+    for directory in dirs:
+        path = os.path.join(base_dir, directory + ".git/")
+        if os.path.isdir(path):
+            repos.append(directory)
+    return repos
 
 @click.group()
 @click.pass_context
