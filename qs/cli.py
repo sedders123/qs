@@ -97,6 +97,7 @@ def config(ctx, base_dir):
 @main.command()
 @click.pass_context
 def sync(ctx):
+    """Attempts to sync all projects found in the base directory"""
     base_dir = ctx.obj['CONFIG']['BASE_DIR']
     dirs = _get_sub_dirs(base_dir)
     repos = _get_git_repos(dirs, base_dir)
