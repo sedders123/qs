@@ -1,6 +1,7 @@
 import click
 import os
 import json
+import subprocess
 from typing import List
 
 CONFIG_PATH = click.get_app_dir("qs") + "config.json"
@@ -53,16 +54,22 @@ def _get_git_repos(dirs: List[str], base_dir: str) -> List[str]:
             repos.append(base_dir + "/" + directory)
     return repos
 
-def _parse_git_branch(raw_branch: str):
-    pass
+def _parse_raw_git_branch(raw_branch: str):
+    branch_text = raw_branch.decode("utf-8")
+    branch = branch_text[10:-1]
+    return branch
+
 
 def _sync_repos(repos: List[str]):
     #for repo in repos:
     #    with cd(repo):
-    #        click.echo(str(os.system("git status | head -1")))
+    #        git_proc = subprocess.check_output("git status | head -1", shell=True)
+    #        click.echo(git_proc)
     with cd(repos[0]):
-        raw_branch = str(os.system("git status | head -1"))
-        branch = _parse_git_branch(raw_branch)
+        raw_branch = subprocess.check_output("git status | head -1", shell=True)
+        branch = _parse_raw_git_branch(raw_branch)
+        if branch == "master":
+            pass
 
 
 @click.group()
