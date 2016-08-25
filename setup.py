@@ -38,7 +38,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         #'Operating System :: POSIX',
         #'Operating System :: MacOS',
-        #'Operating System :: Unix',
+        'Operating System :: Unix',
         'Operating System :: Microsoft :: Windows',
         'Programming Language :: Python',
         #'Programming Language :: Python :: 2',
