@@ -36,7 +36,7 @@ def _config_exists() -> None:
 
 def _create_config() -> None:
     config = {'BASE_DIR': os.path.expanduser("~/Projects")}
-    with open('config.json', 'w') as f:
+    with open(CONFIG_PATH, 'w') as f:
         json.dump(config, f)
     return config
 
