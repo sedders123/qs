@@ -37,6 +37,10 @@ def _file_exists(file: str) -> None:
     else:
         return False
 
+def _save_file(file, contents):
+    with open(file, 'w') as f:
+        json.dump(contents, f)
+
 
 def _create_file(file: str) -> None:
     if not os.path.exists(APP_DIR):
@@ -45,8 +49,7 @@ def _create_file(file: str) -> None:
         file_contents = {'BASE_DIR': os.path.expanduser("~/git/")}
     elif file[len(APP_DIR):] == "projects.json":
         file_contents = {}
-    with open(file, 'w') as f:
-        json.dump(file_contents, f)
+    _save_file(file, file_contents)
     return file_contents
 
 
@@ -85,6 +88,12 @@ def _sync_repos(repos: List[str], base_dir: str):
             if branch == "master":
                 _sync_repo(repo, base_dir)
 
+def _create_project(ctx, name, repos):
+    projects = ctx.obj['PROJECTS']
+    projects[name] = repos
+    _save_file(PROJECTS_PATH, projects)
+
+
 
 @click.group()
 @click.pass_context
@@ -120,9 +129,13 @@ def project(ctx):
 
 
 @project.command(name="add")
-@click.argument('project_name')
-def project_add(project_name):
-    click.echo(project_name)
+@click.argument('name')
+@click.argument('repos', nargs=-1)
+@click.pass_context
+def project_add(ctx, name, repos):
+    repos_list = list(repos)
+    _create_project(ctx, name, repos_list)
+    click.echo(ctx.obj['PROJECTS'])
 
 
 @main.command()
