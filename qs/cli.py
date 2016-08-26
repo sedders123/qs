@@ -46,7 +46,7 @@ def _create_file(file: str) -> None:
     if not os.path.exists(APP_DIR):
         os.makedirs(APP_DIR)
     if file[len(APP_DIR):] == "config.json":
-        file_contents = {'BASE_DIR': os.path.expanduser("~/git/")}
+        file_contents = {'BASE_DIR': os.path.expanduser("~/Projects/")}
     elif file[len(APP_DIR):] == "projects.json":
         file_contents = {}
     _save_file(file, file_contents)
@@ -93,6 +93,11 @@ def _create_project(ctx, name, repos):
     projects[name] = repos
     _save_file(PROJECTS_PATH, projects)
 
+def _edit_config(ctx, base_dir):
+    config = ctx.obj['CONFIG']
+    if base_dir:
+        config["BASE_DIR"] = base_dir
+    _save_file(CONFIG_PATH, config)
 
 
 @click.group()
@@ -104,11 +109,11 @@ def main(ctx):
 
 
 @main.command()
-@click.option('--base-dir', '-p', is_flag=True, help='Base Projects Folder')
+@click.option('--base-dir')
+@click.pass_context
 def config(ctx, base_dir):
-    config = _load_file(CONFIG_PATH)
-    if base_dir:
-        config["BASE_DIR"] = base_dir
+    _edit_config(ctx, base_dir)
+
 
 
 @main.command()
@@ -116,7 +121,6 @@ def sync():
     """Syncs all projects in the base directory"""
     config = _load_file(CONFIG_PATH)
     base_dir = config['BASE_DIR']
-    click.echo(APP_DIR)
     dirs = _get_sub_dirs(base_dir)
     repos = _get_git_repos(dirs, base_dir)
     _sync_repos(repos, base_dir)
