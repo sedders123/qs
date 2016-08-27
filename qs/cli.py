@@ -32,10 +32,7 @@ def _load_file(file: str) -> None:
 
 
 def _file_exists(file: str) -> None:
-    if os.path.isfile(file):
-        return True
-    else:
-        return False
+    return os.path.isfile(file)
 
 
 def _save_file(file, contents):
