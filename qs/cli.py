@@ -2,7 +2,6 @@ import click
 import os
 import json
 import subprocess
-from typing import List
 
 APP_DIR = click.get_app_dir("qs") + "/"
 CONFIG_PATH = APP_DIR + "config.json"
@@ -22,7 +21,7 @@ class cd:
         os.chdir(self.savedPath)
 
 
-def _load_file(file: str) -> None:
+def _load_file(file):
     if _file_exists(file):
         with open(file, 'r') as f:
             file_contents = json.load(f)
@@ -31,7 +30,7 @@ def _load_file(file: str) -> None:
     return file_contents
 
 
-def _file_exists(file: str) -> None:
+def _file_exists(file):
     return os.path.isfile(file)
 
 
@@ -40,7 +39,7 @@ def _save_file(file, contents):
         json.dump(contents, f)
 
 
-def _create_file(file: str) -> None:
+def _create_file(file):
     if not os.path.exists(APP_DIR):
         os.makedirs(APP_DIR)
     if file[len(APP_DIR):] == "config.json":
@@ -51,11 +50,11 @@ def _create_file(file: str) -> None:
     return file_contents
 
 
-def _get_sub_dirs(base_dir: str) -> List[str]:
+def _get_sub_dirs(base_dir):
     return list(filter(lambda x: os.path.isdir(os.path.join(base_dir, x)), os.listdir(base_dir)))
 
 
-def _get_git_repos(dirs: List[str], base_dir: str) -> List[str]:
+def _get_git_repos(dirs, base_dir):
     repos = []
     for directory in dirs:
         path = os.path.join(base_dir, directory + "/.git/")
@@ -64,13 +63,13 @@ def _get_git_repos(dirs: List[str], base_dir: str) -> List[str]:
     return repos
 
 
-def _parse_raw_git_branch(raw_branch: str):
+def _parse_raw_git_branch(raw_branch):
     branch_text = raw_branch.decode("utf-8")
     branch = branch_text[10:-1]
     return branch
 
 
-def _sync_repo(repo: str, base_dir: str):
+def _sync_repo(repo, base_dir):
     repo_name = repo[len(base_dir):]
     click.echo("Synching Repositry: {}".format(repo_name))
     with cd(repo):
@@ -78,7 +77,7 @@ def _sync_repo(repo: str, base_dir: str):
     click.echo("-"*80)  # Fill terminal
 
 
-def _sync_repos(repos: List[str], base_dir: str):
+def _sync_repos(repos, base_dir):
     for repo in repos:
         with cd(repo):
             raw_branch = subprocess.check_output("git status | head -1",
