@@ -100,20 +100,16 @@ def _edit_config(ctx, base_dir):
     _save_file(CONFIG_PATH, config)
 
 
-def _is_dir(path):
-    return os.path.isdir(path)
-
-
 def _get_dir_list(ctx, dirs):
     cwd = os.getcwd() + "/"
     base_dir = ctx.obj['CONFIG']["BASE_DIR"]
     dir_list = []
     for directory in dirs:
-        if _is_dir(cwd + directory):
+        if os.path.isdir(cwd + directory):
             dir_list.append(cwd + directory)
-        elif _is_dir(base_dir + directory):
+        elif os.path.isdir(base_dir + directory):
             dir_list.append(base_dir + directory)
-        elif _is_dir(directory):
+        elif os.path.isdir(directory):
             dir_list.append(directory)
     return dir_list
 
@@ -122,7 +118,7 @@ def _get_full_path_repo_list(ctx, repo_list):
     full_path_repo_list = []
     dir_list = _get_dir_list(ctx, repo_list)
     for directory in dir_list:
-        if _is_dir(directory + "/.git/"):
+        if os.path.isdir(directory + "/.git/"):
             full_path_repo_list.append(directory)
         else:
             click.echo("{} is not a git repositry".format(directory))
