@@ -128,6 +128,7 @@ def _get_full_path_repo_list(ctx, repo_list):
             click.echo("{} is not a git repositry".format(directory))
     return full_path_repo_list
 
+
 @click.group()
 @click.pass_context
 def main(ctx):
@@ -180,6 +181,7 @@ def project_list(ctx, name):
             click.echo("Project '{}' could not be found".format(name))
     else:
         click.echo(ctx.obj["PROJECTS"])
+
 
 @main.command()
 def test():
