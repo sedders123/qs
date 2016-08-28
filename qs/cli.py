@@ -54,12 +54,13 @@ def _get_sub_dirs(base_dir):
     return list(filter(lambda x: os.path.isdir(os.path.join(base_dir, x)), os.listdir(base_dir)))
 
 
-def _get_git_repos(dirs, base_dir):
+def _get_git_repos(dirs, warn=False):
     repos = []
     for directory in dirs:
-        path = os.path.join(base_dir, directory + "/.git/")
-        if os.path.isdir(path):
-            repos.append(base_dir + directory)
+        if os.path.isdir(directory + "/.git/"):
+            repos.append(directory)
+        elif warn:
+            click.echo("{} is not a git repositry".format(directory))
     return repos
 
 
@@ -100,7 +101,7 @@ def _edit_config(ctx, base_dir):
     _save_file(CONFIG_PATH, config)
 
 
-def _get_dir_list(ctx, dirs):
+def _get_full_path_dir_list(ctx, dirs, warn=False):
     cwd = os.getcwd() + "/"
     base_dir = ctx.obj['CONFIG']["BASE_DIR"]
     dir_list = []
@@ -111,17 +112,16 @@ def _get_dir_list(ctx, dirs):
             dir_list.append(base_dir + directory)
         elif os.path.isdir(directory):
             dir_list.append(directory)
+        elif warn:
+            click.echo("Can not find directory {}".format(directory))
+            click.echo("Please enter the directory's full path")
     return dir_list
 
 
-def _get_full_path_repo_list(ctx, repo_list):
+def _get_repo_list(ctx, repo_list):
     full_path_repo_list = []
-    dir_list = _get_dir_list(ctx, repo_list)
-    for directory in dir_list:
-        if os.path.isdir(directory + "/.git/"):
-            full_path_repo_list.append(directory)
-        else:
-            click.echo("{} is not a git repositry".format(directory))
+    dir_list = _get_full_path_dir_list(ctx, repo_list, warn=True)
+    full_path_repo_list = _get_git_repos(dir_list, warn=True)
     return full_path_repo_list
 
 
@@ -141,13 +141,19 @@ def config(ctx, base_dir):
 
 
 @main.command()
-def sync():
+@click.pass_context
+def sync(ctx):
     """Syncs all projects in the base directory"""
-    config = _load_file(CONFIG_PATH)
-    base_dir = config['BASE_DIR']
+    base_dir = ctx.obj['CONFIG']['BASE_DIR']
     dirs = _get_sub_dirs(base_dir)
-    repos = _get_git_repos(dirs, base_dir)
+    full_path_dirs = _get_full_path_dir_list(ctx, dirs)
+    repos = _get_git_repos(full_path_dirs)
     _sync_repos(repos, base_dir)
+
+
+@main.command()
+def test():
+    click.echo(os.getcwd())
 
 
 @main.group()
@@ -161,9 +167,9 @@ def project(ctx):
 @click.argument('repos', nargs=-1)
 @click.pass_context
 def project_add(ctx, name, repos):
-    repo_list = list(repos)
-    full_path_repo_list = _get_full_path_repo_list(ctx, repo_list)
-    _create_project(ctx, name, full_path_repo_list)
+    raw_repo_list = list(repos)
+    repo_list = _get_repo_list(ctx, raw_repo_list)
+    _create_project(ctx, name, repo_list)
 
 
 @project.command(name="list")
@@ -177,8 +183,3 @@ def project_list(ctx, name):
             click.echo("Project '{}' could not be found".format(name))
     else:
         click.echo(ctx.obj["PROJECTS"])
-
-
-@main.command()
-def test():
-    click.echo(os.getcwd())
