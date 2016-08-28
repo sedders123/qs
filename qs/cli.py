@@ -89,7 +89,7 @@ def _sync_repos(repos, base_dir):
 
 def _create_project(ctx, name, repo_list):
     projects = ctx.obj['PROJECTS']
-    projects[name] = repo_list
+    projects[name] = {"repos": repo_list}
     _save_file(PROJECTS_PATH, projects)
 
 
@@ -168,6 +168,18 @@ def project_add(ctx, name, repos):
     full_path_repo_list = _get_full_path_repo_list(ctx, repo_list)
     _create_project(ctx, name, full_path_repo_list)
 
+
+@project.command(name="list")
+@click.argument('name', required=False)
+@click.pass_context
+def project_list(ctx, name):
+    if name:
+        try:
+            click.echo(ctx.obj["PROJECTS"][name])
+        except KeyError:
+            click.echo("Project '{}' could not be found".format(name))
+    else:
+        click.echo(ctx.obj["PROJECTS"])
 
 @main.command()
 def test():
