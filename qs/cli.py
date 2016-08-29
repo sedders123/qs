@@ -90,7 +90,7 @@ def _sync_repos(repos, base_dir):
 
 def _create_project(ctx, name, repo_list):
     projects = ctx.obj['PROJECTS']
-    projects[name] = {"repos": repo_list}
+    projects[name] = {"repos": repo_list, "stories": []}
     _save_file(PROJECTS_PATH, projects)
 
 
@@ -118,11 +118,100 @@ def _get_full_path_dir_list(ctx, dirs, warn=False):
     return dir_list
 
 
-def _get_repo_list(ctx, repo_list):
+def _get_full_path_repo_list(ctx, repo_list):
     full_path_repo_list = []
     dir_list = _get_full_path_dir_list(ctx, repo_list, warn=True)
     full_path_repo_list = _get_git_repos(dir_list, warn=True)
     return full_path_repo_list
+
+
+def _get_projects(ctx, cwd):
+    projects = ctx.obj["PROJECTS"]
+    possible_projects = []
+    for project in projects:
+        if cwd in projects[project]["repos"]:
+            possible_projects.append(project)
+    if len(possible_projects) == 1:
+        project = possible_projects[0]
+    elif len(possible_projects) == 0:
+        click.echo("The current directory is not assigned to a project.")
+        click.echo("Create one before starting a story")
+    else:
+        project = _get_project(possible_projects)
+    return project
+
+
+def _get_project(possible_projects):
+    click.echo("Multiple projects found. Please select one: ")
+    for i, project in enumerate(possible_projects):
+        click.echo("{0}.) {1}".format(i + 1, project))
+    user_response = click.prompt("Enter choice", default=1)
+    return possible_projects[user_response-1]
+
+
+def _can_create_story(ctx, project):
+    projects = ctx.obj["PROJECTS"]
+    stories = projects[project]["stories"]
+    for story in stories:
+        if story["status"] == "OPEN":
+            return False
+    return True
+
+
+def _get_repo_name(ctx, repo):
+    base_dir = ctx.obj["CONFIG"]["BASE_DIR"]
+    repo_name = repo[len(base_dir):]
+    return repo_name
+
+
+def _create_story_branch(ctx, repo, story_id, description):
+    branch_name = story_id + "_" + description.replace(' ', '_')
+    with cd(repo):
+        raw_branch = subprocess.check_output("git status | head -1",
+                                             shell=True)
+        branch = _parse_raw_git_branch(raw_branch)
+        if branch == "master":
+            _create_git_branch(ctx, repo, branch_name)
+        else:
+            repo_name = _get_repo_name(ctx, repo)
+            click.echo("{} is currently on branch {}".format(repo_name, branch))
+            response = click.confirm("Do you want to create the new branch anyway?")
+            if response:
+                _create_git_branch(ctx, repo, branch_name)
+            else:
+                click.echo("Skipping repositry {}".format(repo_name))
+
+
+def _create_git_branch(ctx, repo, branch_name):
+    base_dir = ctx.obj["CONFIG"]["BASE_DIR"]
+    repo_name = repo[len(base_dir):]
+    click.echo("Creating branch {0} for {1}".format(branch_name, repo_name))
+    with cd(repo):
+        os.system("git checkout -b {}".format(branch_name))
+
+
+def _save_stories(ctx, project, stories):
+    projects = ctx.obj["PROJECTS"]
+    projects[project]["stories"] = stories
+    _save_file(PROJECTS_PATH, projects)
+
+
+def _create_story(ctx, story_id, description, project_name):
+    projects = ctx.obj["PROJECTS"]
+    repos = projects[project_name]["repos"]
+    stories = projects[project_name]["stories"]
+    for repo in repos:
+        _create_story_branch(ctx, repo, story_id, description)
+    story = {"id": story_id, "description": description, "status": "OPEN"}
+    stories.append(story)
+    _save_stories(ctx, project_name, stories)
+
+
+def _get_current_story(ctx, project):
+    project = ctx.obj["PROJECTS"][project]
+    for story in project["stories"]:
+        if story["status"] == "OPEN":
+            return story["id"], story["description"]
 
 
 @click.group()
@@ -131,6 +220,7 @@ def main(ctx):
     """A simple CLI to aid in common, repetitive development tasks"""
     ctx.obj = {}
     ctx.obj['CONFIG'] = _load_file(CONFIG_PATH)
+    ctx.obj['PROJECTS'] = _load_file(PROJECTS_PATH)
 
 
 @main.command()
@@ -152,14 +242,15 @@ def sync(ctx):
 
 
 @main.command()
-def test():
-    click.echo(os.getcwd())
+@click.pass_context
+def test(ctx):
+    click.echo(ctx.obj)
 
 
 @main.group()
 @click.pass_context
 def project(ctx):
-    ctx.obj['PROJECTS'] = _load_file(PROJECTS_PATH)
+    pass
 
 
 @project.command(name="add")
@@ -168,7 +259,7 @@ def project(ctx):
 @click.pass_context
 def project_add(ctx, name, repos):
     raw_repo_list = list(repos)
-    repo_list = _get_repo_list(ctx, raw_repo_list)
+    repo_list = _get_full_path_repo_list(ctx, raw_repo_list)
     _create_project(ctx, name, repo_list)
 
 
@@ -183,3 +274,28 @@ def project_list(ctx, name):
             click.echo("Project '{}' could not be found".format(name))
     else:
         click.echo(ctx.obj["PROJECTS"])
+
+
+@main.group()
+@click.pass_context
+def story(ctx):
+    pass
+
+
+@story.command(name="new")
+@click.argument('story_id', metavar="id")
+@click.argument('description_tuple', nargs=-1, metavar="description")
+@click.option('--project')
+@click.pass_context
+def story_new(ctx, story_id, description_tuple, project):
+    story_id = str(story_id)
+    description_list = list(description_tuple)
+    description = " ".join(description_list)
+    if not project:
+        cwd = os.getcwd()
+        project = _get_projects(ctx, cwd)
+    if _can_create_story(ctx, project):
+        _create_story(ctx, story_id, description, project)
+    else:
+        current_id, current_description = _get_current_story(ctx, project)
+        click.echo("Story {0} {1} is currently in progress for this project".format(current_id, current_description))
