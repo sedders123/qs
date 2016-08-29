@@ -70,7 +70,8 @@ def _parse_raw_git_branch(raw_branch):
     return branch
 
 
-def _sync_repo(repo, base_dir):
+def _sync_repo(ctx, repo):
+    base_dir = ctx.obj['CONFIG']['BASE_DIR']
     repo_name = repo[len(base_dir):]
     click.echo("Synching Repositry: {}".format(repo_name))
     with cd(repo):
@@ -78,14 +79,15 @@ def _sync_repo(repo, base_dir):
     click.echo("-"*80)  # Fill terminal
 
 
-def _sync_repos(repos, base_dir):
+def _sync_repos(ctx, repos):
+    base_dir = ctx.obj['CONFIG']['BASE_DIR']
     for repo in repos:
         with cd(repo):
             raw_branch = subprocess.check_output("git status | head -1",
                                                  shell=True)
             branch = _parse_raw_git_branch(raw_branch)
             if branch == "master":
-                _sync_repo(repo, base_dir)
+                _sync_repo(ctx, repo)
 
 
 def _create_project(ctx, name, repo_list):
@@ -164,22 +166,27 @@ def _get_repo_name(ctx, repo):
     return repo_name
 
 
-def _create_story_branch(ctx, repo, story_id, description):
-    branch_name = story_id + "_" + description.replace(' ', '_')
+def _get_current_git_branch(repo):
     with cd(repo):
         raw_branch = subprocess.check_output("git status | head -1",
                                              shell=True)
         branch = _parse_raw_git_branch(raw_branch)
-        if branch == "master":
+    return branch
+
+
+def _create_story_branch(ctx, repo, story_id, description):
+    branch_name = story_id + "_" + description.replace(' ', '_')
+    current_branch = _get_current_git_branch(repo)
+    if current_branch == "master":
+        _create_git_branch(ctx, repo, branch_name)
+    else:
+        repo_name = _get_repo_name(ctx, repo)
+        click.echo("{} is currently on branch {}".format(repo_name, current_branch))
+        response = click.confirm("Do you want to create the new branch anyway?")
+        if response:
             _create_git_branch(ctx, repo, branch_name)
         else:
-            repo_name = _get_repo_name(ctx, repo)
-            click.echo("{} is currently on branch {}".format(repo_name, branch))
-            response = click.confirm("Do you want to create the new branch anyway?")
-            if response:
-                _create_git_branch(ctx, repo, branch_name)
-            else:
-                click.echo("Skipping repositry {}".format(repo_name))
+            click.echo("Skipping repositry {}".format(repo_name))
 
 
 def _create_git_branch(ctx, repo, branch_name):
@@ -201,6 +208,7 @@ def _create_story(ctx, story_id, description, project_name):
     repos = projects[project_name]["repos"]
     stories = projects[project_name]["stories"]
     for repo in repos:
+        _sync_repo(ctx, repo)
         _create_story_branch(ctx, repo, story_id, description)
     story = {"id": story_id, "description": description, "status": "OPEN"}
     stories.append(story)
@@ -238,7 +246,7 @@ def sync(ctx):
     dirs = _get_sub_dirs(base_dir)
     full_path_dirs = _get_full_path_dir_list(ctx, dirs)
     repos = _get_git_repos(full_path_dirs)
-    _sync_repos(repos, base_dir)
+    _sync_repos(ctx, repos)
 
 
 @main.command()
