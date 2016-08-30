@@ -58,7 +58,7 @@ def _get_git_repos(dirs, warn=False):
     repos = []
     for directory in dirs:
         if os.path.isdir(directory + "/.git/"):
-            repos.append(directory)
+            repos.append(os.path.normpath(directory))
         elif warn:
             click.echo("{} is not a git repositry".format(directory))
     return repos
@@ -124,6 +124,12 @@ def _get_full_path_repo_list(ctx, repo_list):
     full_path_repo_list = []
     dir_list = _get_full_path_dir_list(ctx, repo_list, warn=True)
     full_path_repo_list = _get_git_repos(dir_list, warn=True)
+    if os.name == "nt":
+        windows_full_path_repo_list = []
+        for repo in full_path_repo_list:
+            windows_repo = repo.replace("\\\\", "\\")
+            windows_full_path_repo_list.append(windows_repo)
+        return windows_full_path_repo_list
     return full_path_repo_list
 
 
@@ -307,3 +313,15 @@ def story_new(ctx, story_id, description_tuple, project):
     else:
         current_id, current_description = _get_current_story(ctx, project)
         click.echo("Story {0} {1} is currently in progress for this project".format(current_id, current_description))
+
+@story.command(name="push")
+@click.option('--project')
+@click.pass_context
+def story_push(ctx, project):
+    if not project:
+        cwd = os.getcwd()
+        project = _get_projects(ctx, cwd)
+    story_id, description = _get_current_story(ctx, project)
+    changed_repos = _get_changed_repos(ctx, project)
+    for repo in changed_repos:
+        _sync_repo(repo)
