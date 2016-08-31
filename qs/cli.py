@@ -223,7 +223,7 @@ def _get_current_story(ctx, project):
     for story in project["stories"]:
         if story["status"] == "OPEN":
             return story["id"], story["description"]
-            
+
 
 def _get_commit_message(ctx, repo):
     repo_name = _get_repo_name(ctx, repo)
