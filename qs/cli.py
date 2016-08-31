@@ -71,8 +71,7 @@ def _parse_raw_git_branch(raw_branch):
 
 
 def _sync_repo(ctx, repo):
-    base_dir = ctx.obj['CONFIG']['BASE_DIR']
-    repo_name = repo[len(base_dir):]
+    repo_name = _get_repo_name(ctx, repo)
     click.echo("Synching Repositry: {}".format(repo_name))
     with cd(repo):
         os.system("git pull upstream master")
@@ -168,8 +167,7 @@ def _can_create_story(ctx, project):
 
 def _get_repo_name(ctx, repo):
     base_dir = ctx.obj["CONFIG"]["BASE_DIR"]
-    repo_name = repo[len(base_dir):]
-    return repo_name
+    return repo[len(base_dir):]
 
 
 def _get_current_git_branch(repo):
@@ -196,8 +194,7 @@ def _create_story_branch(ctx, repo, story_id, description):
 
 
 def _create_git_branch(ctx, repo, branch_name):
-    base_dir = ctx.obj["CONFIG"]["BASE_DIR"]
-    repo_name = repo[len(base_dir):]
+    repo_name = _get_repo_name(ctx, repo)
     click.echo("Creating branch {0} for {1}".format(branch_name, repo_name))
     with cd(repo):
         os.system("git checkout -b {}".format(branch_name))
@@ -226,6 +223,60 @@ def _get_current_story(ctx, project):
     for story in project["stories"]:
         if story["status"] == "OPEN":
             return story["id"], story["description"]
+            
+
+def _get_commit_message(ctx, repo):
+    repo_name = _get_repo_name(ctx, repo)
+    commit_message = click.prompt("Please enter a commit message")
+    return commit_message
+
+
+def _get_changed_repo(repo):
+    with cd(repo):
+        diff = subprocess.check_output("git diff",
+                                        shell=True)
+        return diff == b''
+
+
+def _get_changed_repos(ctx, project):
+    changed_repos = []
+    repos = ctx.obj["PROJECTS"][project][repos]
+    for repo in repo:
+        _get_changed_repo(repo)
+        changed_repos.append(repo)
+    return changed_repos
+
+
+def _process_unused_repos(ctx, project, changed_repos):
+    repos = ctx.obj["PROJECTS"][project][repos]
+    for repo in repos:
+        if not repo in changed_repos:
+            current_branch = _get_current_git_branch(repo)
+            _git_checkout(repo, "master")
+            _git_delete_branch(repo, current_branch)
+
+
+def _git_checkout(repo, branch):
+    with cd(repo):
+        os.system("git checkout {}".format(branch))
+
+
+def _git_delete_branch(repo, branch):
+    with cd(repo):
+        os.system("git branch -d {}".format(branch))
+
+def _git_stage_all(repo):
+    with cd(repo):
+        os.system("git add .")
+
+
+def _git_commit(repo, commit_message):
+    with cd(repo):
+        os.system("git commit -m '{0}'".format(commit_message))
+
+def _git_push_branch(repo, branch):
+    with cd(repo):
+        os.system("git push origin {0}".format(branch))
 
 
 @click.group()
@@ -323,5 +374,12 @@ def story_push(ctx, project):
         project = _get_projects(ctx, cwd)
     story_id, description = _get_current_story(ctx, project)
     changed_repos = _get_changed_repos(ctx, project)
+    _process_unused_repos(ctx, project, changed_repos)
     for repo in changed_repos:
         _sync_repo(repo)
+        commit_message = _get_commit_message(ctx, repo)
+        _git_stage_all(repo)
+        _git_commit(repo, commit_message)
+        current_branch = _get_current_git_branch(repo)
+        _git_push_branch(repo, current_branch)
+        # TODO: _github_create_pull_request(repo)
