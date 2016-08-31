@@ -3,7 +3,7 @@ A simple CLI to aid in common, repetitive development tasks
 """
 from setuptools import find_packages, setup
 
-dependencies = ['click']
+dependencies = ['click', 'requests']
 
 setup(
     name='qs',
