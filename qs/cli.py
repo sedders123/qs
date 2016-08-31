@@ -2,6 +2,7 @@ import click
 import os
 import json
 import subprocess
+import requests
 
 APP_DIR = click.get_app_dir("qs") + "/"
 CONFIG_PATH = APP_DIR + "config.json"
@@ -43,7 +44,7 @@ def _create_file(file):
     if not os.path.exists(APP_DIR):
         os.makedirs(APP_DIR)
     if file[len(APP_DIR):] == "config.json":
-        file_contents = {'BASE_DIR': os.path.expanduser("~/Projects/")}
+        file_contents = {'BASE_DIR': os.path.expanduser("~/Projects/"), 'GITHUB_TOKEN':""}
     elif file[len(APP_DIR):] == "projects.json":
         file_contents = {}
     _save_file(file, file_contents)
@@ -95,10 +96,12 @@ def _create_project(ctx, name, repo_list):
     _save_file(PROJECTS_PATH, projects)
 
 
-def _edit_config(ctx, base_dir):
+def _edit_config(ctx, base_dir, github_token):
     config = ctx.obj['CONFIG']
     if base_dir:
         config["BASE_DIR"] = base_dir
+    if github_token:
+        config["GITHUB_TOKEN"] = github_token
     _save_file(CONFIG_PATH, config)
 
 
@@ -290,9 +293,10 @@ def main(ctx):
 
 @main.command()
 @click.option('--base-dir')
+@click.option('--github-token')
 @click.pass_context
-def config(ctx, base_dir):
-    _edit_config(ctx, base_dir)
+def config(ctx, base_dir, github_token):
+    _edit_config(ctx, base_dir, github_token)
 
 
 @main.command()
