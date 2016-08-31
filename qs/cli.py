@@ -7,6 +7,7 @@ import requests
 APP_DIR = click.get_app_dir("qs") + "/"
 CONFIG_PATH = APP_DIR + "config.json"
 PROJECTS_PATH = APP_DIR + "projects.json"
+GITHUB_API_BASE = "https://api.github.com"
 
 
 class cd:
@@ -282,6 +283,31 @@ def _git_push_branch(repo, branch):
         os.system("git push origin {0}".format(branch))
 
 
+def _git_list_remotes(repo):
+    with cd(repo):
+        return subprocess.check_output("git remote -v", shell=True)
+
+
+def _create_github_pull_request(repo, branch, remote):
+    pass
+
+
+def _parse_raw_git_remotes(raw_remotes):
+    raw_remotes_list = raw_remotes.splitlines()
+    click.echo(raw_remotes_list)
+
+def _get_remote(repo):
+    raw_remotes = _git_list_remotes(repo)
+    return _parse_raw_git_remotes(raw_remotes)
+
+
+def _get_remote_list(ctx, repo_list):
+    remote_list = []
+    for repo in reops:
+        remote = _get_remote(repo)
+        remote_list.append(remote)
+
+
 @click.group()
 @click.pass_context
 def main(ctx):
@@ -313,7 +339,7 @@ def sync(ctx):
 @main.command()
 @click.pass_context
 def test(ctx):
-    click.echo(ctx.obj)
+    _get_remote("C:/Users/James/Projects/qs")
 
 
 @main.group()
@@ -329,6 +355,7 @@ def project(ctx):
 def project_add(ctx, name, repos):
     raw_repo_list = list(repos)
     repo_list = _get_full_path_repo_list(ctx, raw_repo_list)
+    remote_list = _get_remote_list(ctx, repo_list)
     _create_project(ctx, name, repo_list)
 
 
