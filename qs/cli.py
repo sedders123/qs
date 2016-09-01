@@ -91,9 +91,11 @@ def _sync_repos(ctx, repos):
                 _sync_repo(ctx, repo)
 
 
-def _create_project(ctx, name, repos):
+def _create_project(ctx, name, repos, upstream):
     projects = ctx.obj['PROJECTS']
-    projects[name] = {"repos": repos, "stories": []}
+    if upstream is None:
+        upstream = "upstream"
+    projects[name] = {"repos": repos, "stories": [], "upstream": upstream}
     _save_file(PROJECTS_PATH, projects)
 
 
@@ -362,12 +364,13 @@ def project(ctx):
 @project.command(name="add")
 @click.argument('name')
 @click.argument('repos', nargs=-1)
+@click.option('--upstream')
 @click.pass_context
-def project_add(ctx, name, repos):
+def project_add(ctx, name, repos, upstream):
     raw_repo_list = list(repos)
     repo_list = _get_full_path_repo_list(ctx, raw_repo_list)
     repos = _create_repos(repo_list)
-    _create_project(ctx, name, repos)
+    _create_project(ctx, name, repos, upstream)
 
 
 @project.command(name="list")
