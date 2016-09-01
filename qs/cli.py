@@ -91,9 +91,9 @@ def _sync_repos(ctx, repos):
                 _sync_repo(ctx, repo)
 
 
-def _create_project(ctx, name, repo_list):
+def _create_project(ctx, name, repos):
     projects = ctx.obj['PROJECTS']
-    projects[name] = {"repos": repo_list, "stories": []}
+    projects[name] = {"repos": repos, "stories": []}
     _save_file(PROJECTS_PATH, projects)
 
 
@@ -291,21 +291,32 @@ def _git_list_remotes(repo):
 def _create_github_pull_request(repo, branch, remote):
     pass
 
-
+# This function is awful.
+# TODO: Rewrite this
 def _parse_raw_git_remotes(raw_remotes):
+    remotes = []
     raw_remotes_list = raw_remotes.splitlines()
-    click.echo(raw_remotes_list)
+    for raw_remote in raw_remotes_list:
+        raw_remote = raw_remote.decode("utf-8")
+        remote_name = raw_remote.split("\t")[0]
+        raw_remote_url = raw_remote.split("\t")[1]
+        remote_url = raw_remote_url.split(" ")[0]
+        remote_type = raw_remote_url.split(" ")[1].strip("()")
+        remote = {"name": remote_name, "url": remote_url, "type": remote_type}
+        remotes.append(remote)
+    return remotes
 
-def _get_remote(repo):
+def _get_remotes(repo):
     raw_remotes = _git_list_remotes(repo)
     return _parse_raw_git_remotes(raw_remotes)
 
 
-def _get_remote_list(ctx, repo_list):
-    remote_list = []
-    for repo in reops:
-        remote = _get_remote(repo)
-        remote_list.append(remote)
+def _create_repos(repo_list):
+    repos = []
+    for repo in repo_list:
+        remotes = _get_remotes(repo)
+        repos.append({"path": repo, "remotes": remotes})
+    return repos
 
 
 @click.group()
@@ -339,7 +350,7 @@ def sync(ctx):
 @main.command()
 @click.pass_context
 def test(ctx):
-    _get_remote("C:/Users/James/Projects/qs")
+    click.echo(ctx.obj)
 
 
 @main.group()
@@ -355,8 +366,8 @@ def project(ctx):
 def project_add(ctx, name, repos):
     raw_repo_list = list(repos)
     repo_list = _get_full_path_repo_list(ctx, raw_repo_list)
-    remote_list = _get_remote_list(ctx, repo_list)
-    _create_project(ctx, name, repo_list)
+    repos = _create_repos(repo_list)
+    _create_project(ctx, name, repos)
 
 
 @project.command(name="list")
