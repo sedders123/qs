@@ -4,52 +4,9 @@ import json
 import subprocess
 import requests
 
-APP_DIR = click.get_app_dir("qs") + "/"
-CONFIG_PATH = APP_DIR + "config.json"
-PROJECTS_PATH = APP_DIR + "projects.json"
-GITHUB_API_BASE = "https://api.github.com"
-
-
-class cd:
-    """Context manager for changing the current working directory"""
-    def __init__(self, newPath):
-        self.newPath = os.path.expanduser(newPath)
-
-    def __enter__(self):
-        self.savedPath = os.getcwd()
-        os.chdir(self.newPath)
-
-    def __exit__(self, etype, value, traceback):
-        os.chdir(self.savedPath)
-
-
-def _load_file(file):
-    if _file_exists(file):
-        with open(file, 'r') as f:
-            file_contents = json.load(f)
-    else:
-        file_contents = _create_file(file)
-    return file_contents
-
-
-def _file_exists(file):
-    return os.path.isfile(file)
-
-
-def _save_file(file, contents):
-    with open(file, 'w') as f:
-        json.dump(contents, f)
-
-
-def _create_file(file):
-    if not os.path.exists(APP_DIR):
-        os.makedirs(APP_DIR)
-    if file[len(APP_DIR):] == "config.json":
-        file_contents = {'BASE_DIR': os.path.expanduser("~/Projects/"), 'GITHUB_TOKEN':""}
-    elif file[len(APP_DIR):] == "projects.json":
-        file_contents = {}
-    _save_file(file, file_contents)
-    return file_contents
+from .constants import *
+from .helpers import *
+from .utils import *
 
 
 def _get_sub_dirs(base_dir):
@@ -114,16 +71,7 @@ def _create_project(ctx, name, repos, upstream):
     if upstream is None:
         upstream = "upstream"
     projects[name] = {"repos": repos, "stories": [], "upstream": upstream}
-    _save_file(PROJECTS_PATH, projects)
-
-
-def _edit_config(ctx, base_dir, github_token):
-    config = ctx.obj['CONFIG']
-    if base_dir:
-        config["BASE_DIR"] = base_dir
-    if github_token:
-        config["GITHUB_TOKEN"] = github_token
-    _save_file(CONFIG_PATH, config)
+    save_file(PROJECTS_PATH, projects)
 
 
 def _get_full_path_dir_list(ctx, dirs, warn=False):
@@ -227,7 +175,7 @@ def _create_git_branch(ctx, repo, branch_name):
 def _save_stories(ctx, project, stories):
     projects = ctx.obj["PROJECTS"]
     projects[project]["stories"] = stories
-    _save_file(PROJECTS_PATH, projects)
+    save_file(PROJECTS_PATH, projects)
 
 
 def _create_story(ctx, story_id, description, project_name):
@@ -344,8 +292,8 @@ def _create_repos(repo_list):
 def main(ctx):
     """A simple CLI to aid in common, repetitive development tasks"""
     ctx.obj = {}
-    ctx.obj['CONFIG'] = _load_file(CONFIG_PATH)
-    ctx.obj['PROJECTS'] = _load_file(PROJECTS_PATH)
+    ctx.obj['CONFIG'] = load_file(CONFIG_PATH)
+    ctx.obj['PROJECTS'] = load_file(PROJECTS_PATH)
 
 
 @main.command()
@@ -353,7 +301,7 @@ def main(ctx):
 @click.option('--github-token')
 @click.pass_context
 def config(ctx, base_dir, github_token):
-    _edit_config(ctx, base_dir, github_token)
+    edit_config(ctx, base_dir, github_token)
 
 
 @main.command()
