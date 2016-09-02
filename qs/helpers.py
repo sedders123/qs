@@ -65,8 +65,9 @@ def create_story_branch(ctx, repo, story_id, description):
         create_git_branch(ctx, repo, branch_name)
     else:
         repo_name = get_repo_name(ctx, repo)
-        click.echo("{} is currently on branch {}".format(repo_name, current_branch))
-        response = click.confirm("Do you want to create the new branch anyway?")
+        click.echo("{} is currently on branch {}"
+                   .format(repo_name, current_branch))
+        response = click.confirm("Create new branch anyway?")
         if response:
             create_git_branch(ctx, repo, branch_name)
         else:

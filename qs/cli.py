@@ -137,7 +137,8 @@ def story_new(ctx, story_id, description_tuple, project):
         _create_story(ctx, story_id, description, project)
     else:
         current_id, current_description = get_current_story(ctx, project)
-        click.echo("Story {0} {1} is currently in progress for this project".format(current_id, current_description))
+        click.echo("Story {0} {1} is currently in progress for this project"
+                   .format(current_id, current_description))
 
 
 @story.command(name="push")
