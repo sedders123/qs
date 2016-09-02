@@ -1,10 +1,11 @@
 import click
 import os
 
-from .constants import *
-from .helpers import *
-from .utils import *
-from .git import *
+from qs.constants import *
+from qs.helpers import *
+from qs.utils import *
+from qs.git import *
+import qs.github
 
 
 def _edit_config(ctx, base_dir, github_token):

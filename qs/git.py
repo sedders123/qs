@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from .utils import *
+from qs.utils import *
 
 
 def git_checkout(repo, branch):
@@ -141,7 +141,6 @@ def create_repos(repo_list):
 def parse_raw_git_remotes(raw_remotes):
     # This function is awful.
     # TODO: Rewrite this
-
     remotes = []
     raw_remotes_list = raw_remotes.splitlines()
     for raw_remote in raw_remotes_list:

@@ -2,7 +2,7 @@ import os
 import json
 import click
 
-from .constants import *
+from qs.constants import *
 
 
 class cd:

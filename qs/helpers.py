@@ -1,7 +1,7 @@
 import click
 
-from .utils import *
-from .git import *
+from qs.utils import *
+from qs.git import *
 
 
 def get_full_path_dir_list(ctx, dirs, warn=False):
@@ -37,14 +37,16 @@ def get_full_path_repo_list(ctx, repo_list):
 def get_project(ctx, cwd):
     projects = ctx.obj["PROJECTS"]
     possible_projects = []
-    for project in projects:
-        if cwd in projects[project]["repos"][0]["path"]:
-            possible_projects.append(project)
+    for possible_project in projects:
+        if cwd in projects[possible_project]["repos"][0]["path"]:
+            possible_projects.append(possible_project)
     if len(possible_projects) == 1:
         project = possible_projects[0]
     elif len(possible_projects) == 0:
+        # TODO: Make this raise an exception
         click.echo("The current directory is not assigned to a project.")
         click.echo("Create one before starting a story")
+        return
     else:
         project = get_desired_project(possible_projects)
     return project
