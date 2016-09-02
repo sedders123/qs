@@ -72,23 +72,41 @@ def _parse_raw_git_branch(raw_branch):
     return branch
 
 
-def _sync_repo(ctx, repo):
+def _sync_repo(ctx, repo, upstream):
     repo_name = _get_repo_name(ctx, repo)
     click.echo("Synching Repositry: {}".format(repo_name))
     with cd(repo):
-        os.system("git pull upstream master")
+        os.system("git pull {} master".format(upstream))
     click.echo("-"*80)  # Fill terminal
 
 
-def _sync_repos(ctx, repos):
-    base_dir = ctx.obj['CONFIG']['BASE_DIR']
+def _sync_repos(ctx, repos, upstream):
     for repo in repos:
         with cd(repo):
             raw_branch = subprocess.check_output("git status | head -1",
                                                  shell=True)
             branch = _parse_raw_git_branch(raw_branch)
             if branch == "master":
-                _sync_repo(ctx, repo)
+                _sync_repo(ctx, repo, upstream)
+
+
+def _sync_projects(ctx, projects):
+    for project in projects:
+        _sync_project(ctx, project)
+
+
+def _sync_project(ctx, project):
+    upstream = project["upstream"]
+    repo_paths = _get_repo_paths(project["repos"])
+    _sync_repos(ctx, repo_paths, upstream)
+
+
+def _get_repo_paths(repos):
+    paths = []
+    for repo in repos:
+        paths.append(repo["path"])
+    return paths
+
 
 
 def _create_project(ctx, name, repos, upstream):
@@ -339,14 +357,16 @@ def config(ctx, base_dir, github_token):
 
 
 @main.command()
+@click.argument('project_name', metavar='project', required=False)
 @click.pass_context
-def sync(ctx):
-    """Syncs all projects in the base directory"""
-    base_dir = ctx.obj['CONFIG']['BASE_DIR']
-    dirs = _get_sub_dirs(base_dir)
-    full_path_dirs = _get_full_path_dir_list(ctx, dirs)
-    repos = _get_git_repos(full_path_dirs)
-    _sync_repos(ctx, repos)
+def sync(ctx, project_name):
+    """Syncs all projects"""
+    projects = ctx.obj["PROJECTS"]
+    if project_name:
+        project = projects[project_name]
+        _sync_project(ctx, project)
+    else:
+        _sync_projects(ctx, projects)
 
 
 @main.command()
