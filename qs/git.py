@@ -152,3 +152,12 @@ def parse_raw_git_remotes(raw_remotes):
         remote = {"name": remote_name, "url": remote_url, "type": remote_type}
         remotes.append(remote)
     return remotes
+
+
+def parse_git_remote_url(remote_url):
+    # TODO: Make this support http/https
+    if "@" in remote_url:
+        remote = remote_url.split(":")[1]
+        remote_owner = remote.split("/")[0]
+        remote_repo = remote.split("/")[1]
+    return remote_owner, remote_repo
