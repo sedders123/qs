@@ -65,6 +65,9 @@ def main(ctx):
 @click.option('--github-token')
 @click.pass_context
 def config(ctx, base_dir, github_token):
+    """Edit the config file"""
+    if base_dir is None or github_token is None:
+        click.echo(config.get_help(ctx))
     _edit_config(ctx, base_dir, github_token)
 
 
@@ -72,7 +75,7 @@ def config(ctx, base_dir, github_token):
 @click.argument('project_name', metavar='project', required=False)
 @click.pass_context
 def sync(ctx, project_name):
-    """Syncs all projects"""
+    """Sync projects"""
     projects = ctx.obj["PROJECTS"]
     if project_name:
         project = projects[project_name]
@@ -84,12 +87,14 @@ def sync(ctx, project_name):
 @main.command()
 @click.pass_context
 def test(ctx):
+    """Used for development debugging"""
     click.echo(ctx.obj)
 
 
 @main.group()
 @click.pass_context
 def project(ctx):
+    """Commands to aid in project management"""
     pass
 
 
@@ -99,6 +104,7 @@ def project(ctx):
 @click.option('--upstream')
 @click.pass_context
 def project_add(ctx, name, repos, upstream):
+    """Create a new project"""
     raw_repo_list = list(repos)
     repo_list = helpers.get_full_path_repo_list(ctx, raw_repo_list)
     repos = git.create_repos(repo_list)
@@ -109,6 +115,7 @@ def project_add(ctx, name, repos, upstream):
 @click.argument('name', required=False)
 @click.pass_context
 def project_list(ctx, name):
+    """Display the contents of projects"""
     if name:
         try:
             click.echo(ctx.obj["PROJECTS"][name])
@@ -121,6 +128,7 @@ def project_list(ctx, name):
 @main.group()
 @click.pass_context
 def story(ctx):
+    """Commands to aid in story management"""
     pass
 
 
@@ -130,6 +138,7 @@ def story(ctx):
 @click.option('--project')
 @click.pass_context
 def story_new(ctx, story_id, description_tuple, project):
+    """Create a new story"""
     story_id = str(story_id)
     description_list = list(description_tuple)
     description = " ".join(description_list)
@@ -149,6 +158,7 @@ def story_new(ctx, story_id, description_tuple, project):
 @click.option('--project')
 @click.pass_context
 def story_push(ctx, project):
+    """Commit all changes, then make a pull request"""
     if not project:
         cwd = os.getcwd()
         project = helpers.get_project(ctx, cwd)
@@ -171,6 +181,7 @@ def story_push(ctx, project):
 @click.option('--project')
 @click.pass_context
 def story_complete(ctx, story_id, project):
+    """Mark as complete and revert to master branch"""
     projects = ctx.obj["PROJECTS"]
     if not project:
         cwd = os.getcwd()
