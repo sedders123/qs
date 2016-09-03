@@ -117,13 +117,12 @@ def get_changed_repos(ctx, project):
     return changed_repos
 
 
-def process_unused_repos(ctx, project, changed_repos):
+def tear_down_story(ctx, project):
     repos = ctx.obj["PROJECTS"][project]["repos"]
     for repo in repos:
-        if repo not in changed_repos:
-            current_branch = get_current_git_branch(repo)
-            git_checkout(repo, "master")
-            git_delete_branch(repo, current_branch)
+        current_branch = get_current_git_branch(repo)
+        git_checkout(repo, "master")
+        git_delete_branch(repo, current_branch)
 
 
 def get_remotes(repo_path):

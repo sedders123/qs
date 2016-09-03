@@ -164,7 +164,6 @@ def story_push(ctx, project):
         project = helpers.get_project(ctx, cwd)
     story_id, description = helpers.get_current_story(ctx, project)
     changed_repos = git.get_changed_repos(ctx, project)
-    git.process_unused_repos(ctx, project, changed_repos)
     for repo in changed_repos:
         git.sync_repo(ctx, repo["path"],
                       ctx.obj["PROJECTS"][project]["upstream"])
@@ -191,6 +190,7 @@ def story_complete(ctx, story_id, project):
                                                                     project)
         projects[project]["stories"]["id" == story_id]["status"] = "COMPLETED"
         utils.save_file(constants.PROJECTS_PATH, projects)
+        git.tear_down_story(ctx, project)
     except errors.NoStoriesError:
         click.echo("No stories have been created for this project.")
         click.echo("Create one before trying again")
