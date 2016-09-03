@@ -153,8 +153,8 @@ def story_push(ctx, project):
         cwd = os.getcwd()
         project = helpers.get_project(ctx, cwd)
     story_id, description = helpers.get_current_story(ctx, project)
-    changed_repos = get_changed_repos(ctx, project)
-    process_unused_repos(ctx, project, changed_repos)
+    changed_repos = git.get_changed_repos(ctx, project)
+    git.process_unused_repos(ctx, project, changed_repos)
     for repo in changed_repos:
         git.sync_repo(ctx, repo["path"],
                       ctx.obj["PROJECTS"][project]["upstream"])

@@ -118,7 +118,7 @@ def get_changed_repos(ctx, project):
 
 
 def process_unused_repos(ctx, project, changed_repos):
-    repos = ctx.obj["PROJECTS"][project][repos]
+    repos = ctx.obj["PROJECTS"][project]["repos"]
     for repo in repos:
         if repo not in changed_repos:
             current_branch = get_current_git_branch(repo)
