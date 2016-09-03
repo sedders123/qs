@@ -4,6 +4,7 @@ import os
 import qs.utils as utils
 import qs.git as git
 import qs.constants as constants
+import qs.errors as errors
 
 
 def get_full_path_dir_list(ctx, dirs, warn=False):
@@ -98,3 +99,5 @@ def get_current_story(ctx, project):
     for story in project["stories"]:
         if story["status"] == "OPEN":
             return story["id"], story["description"]
+    if not project["stories"]:
+        raise errors.NoStoriesError()

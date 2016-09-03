@@ -6,6 +6,7 @@ import qs.helpers as helpers
 import qs.utils as utils
 import qs.git as git
 import qs.github as github
+import qs.errors as errors
 
 
 def _edit_config(ctx, base_dir, github_token):
@@ -138,7 +139,8 @@ def story_new(ctx, story_id, description_tuple, project):
     if helpers.can_create_story(ctx, project):
         _create_story(ctx, story_id, description, project)
     else:
-        current_id, current_description = helpers.get_current_story(ctx, project)
+        current_id, current_description = helpers.get_current_story(ctx,
+                                                                    project)
         click.echo("Story {0} {1} is currently in progress for this project"
                    .format(current_id, current_description))
 
@@ -162,3 +164,22 @@ def story_push(ctx, project):
         current_branch = git.get_current_git_branch(repo["path"])
         git.git_push_branch(repo["path"], current_branch)
         github.create_github_pull_request(ctx, repo)
+
+
+@story.command(name="complete")
+@click.argument('story_id', metavar="id", required=False)
+@click.option('--project')
+@click.pass_context
+def story_complete(ctx, story_id, project):
+    projects = ctx.obj["PROJECTS"]
+    if not project:
+        cwd = os.getcwd()
+        project = helpers.get_project(ctx, cwd)
+    try:
+        current_id, current_description = helpers.get_current_story(ctx,
+                                                                    project)
+        projects[project]["stories"]["id" == story_id]["status"] = "COMPLETED"
+        utils.save_file(constants.PROJECTS_PATH, projects)
+    except errors.NoStoriesError:
+        click.echo("No stories have been created for this project.")
+        click.echo("Create one before trying again")
