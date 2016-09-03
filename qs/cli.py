@@ -194,11 +194,13 @@ def story_complete(ctx, story_id, project):
     if not project:
         cwd = os.getcwd()
         project = helpers.get_project(ctx, cwd)
-    _sync_project(ctx, project)
+    _sync_project(ctx, projects[project])
     try:
         current_id, current_description = helpers.get_current_story(ctx,
                                                                     project)
-        projects[project]["stories"]["id" == story_id]["status"] = "COMPLETED"
+        for story in projects[project]["stories"]:
+            if story["id"] == story_id and not story["pr_created"]:
+                story["status"] = "COMPLETED"
         utils.save_file(constants.PROJECTS_PATH, projects)
         git.tear_down_story(ctx, project)
     except errors.NoStoriesError:
