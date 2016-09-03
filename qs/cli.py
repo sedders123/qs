@@ -46,7 +46,12 @@ def _create_story(ctx, story_id, description, project_name):
     for repo in repos:
         git.sync_repo(ctx, repo["path"], upstream)
         helpers.create_story_branch(ctx, repo["path"], story_id, description)
-    story = {"id": story_id, "description": description, "status": "OPEN"}
+    story = {
+            "id": story_id,
+            "description": description,
+            "status": "OPEN",
+            "pr_created": False
+            }
     stories.append(story)
     helpers.save_stories(ctx, project_name, stories)
 
@@ -159,20 +164,24 @@ def story_new(ctx, story_id, description_tuple, project):
 @click.pass_context
 def story_push(ctx, project):
     """Commit all changes, then make a pull request"""
+    projects = ctx.obj["PROJECTS"]
     if not project:
         cwd = os.getcwd()
         project = helpers.get_project(ctx, cwd)
     story_id, description = helpers.get_current_story(ctx, project)
     changed_repos = git.get_changed_repos(ctx, project)
     for repo in changed_repos:
-        git.sync_repo(ctx, repo["path"],
-                      ctx.obj["PROJECTS"][project]["upstream"])
+        git.sync_repo(ctx, repo["path"], projects[project]["upstream"])
         commit_message = git.get_commit_message(ctx, repo["path"])
         git.git_stage_all(repo["path"])
         git.git_commit(repo["path"], commit_message)
         current_branch = git.get_current_git_branch(repo["path"])
         git.git_push_branch(repo["path"], current_branch)
-        github.create_github_pull_request(ctx, repo)
+        for story in projects[project]["stories"]:
+            if story["id"] == story_id and not story["pr_created"]:
+                github.create_github_pull_request(ctx, repo)
+                story["pr_created"] = True
+        utils.save_file(constants.PROJECTS_PATH, projects)
 
 
 @story.command(name="complete")
@@ -185,6 +194,7 @@ def story_complete(ctx, story_id, project):
     if not project:
         cwd = os.getcwd()
         project = helpers.get_project(ctx, cwd)
+    _sync_project(ctx, project)
     try:
         current_id, current_description = helpers.get_current_story(ctx,
                                                                     project)

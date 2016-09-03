@@ -120,9 +120,9 @@ def get_changed_repos(ctx, project):
 def tear_down_story(ctx, project):
     repos = ctx.obj["PROJECTS"][project]["repos"]
     for repo in repos:
-        current_branch = get_current_git_branch(repo)
-        git_checkout(repo, "master")
-        git_delete_branch(repo, current_branch)
+        current_branch = get_current_git_branch(repo["path"])
+        git_checkout(repo["path"], "master")
+        git_delete_branch(repo["path"], current_branch)
 
 
 def get_remotes(repo_path):
