@@ -1,50 +1,51 @@
 import os
 import subprocess
+import click
 
-from qs.utils import *
+import qs.utils as utils
 
 
 def git_checkout(repo_path, branch):
-    with cd(repo_path):
+    with utils.cd(repo_path):
         os.system("git checkout {}".format(branch))
 
 
 def git_delete_branch(repo_path, branch):
-    with cd(repo_path):
+    with utils.cd(repo_path):
         os.system("git branch -d {}".format(branch))
 
 
 def git_stage_all(repo_path):
-    with cd(repo_path):
+    with utils.cd(repo_path):
         os.system("git add .")
 
 
 def git_commit(repo_path, commit_message):
-    with cd(repo_path):
+    with utils.cd(repo_path):
         os.system("git commit -m '{0}'".format(commit_message))
 
 
 def git_push_branch(repo_path, branch):
-    with cd(repo_path):
+    with utils.cd(repo_path):
         os.system("git push origin {0}".format(branch))
 
 
 def git_list_remotes(repo_path):
-    with cd(repo_path):
+    with utils.cd(repo_path):
         return subprocess.check_output("git remote -v", shell=True)
 
 
 def sync_repo(ctx, repo_path, upstream):
     repo_name = get_repo_name(ctx, repo_path)
     click.echo("Synching Repositry: {}".format(repo_name))
-    with cd(repo_path):
+    with utils.cd(repo_path):
         os.system("git pull {} master".format(upstream))
     click.echo("-"*80)  # Fill terminal
 
 
 def sync_repos(ctx, repos, upstream):
     for repo in repos:
-        with cd(repo):
+        with utils.cd(repo):
             raw_branch = subprocess.check_output("git status | head -1",
                                                  shell=True)
             branch = parse_raw_git_branch(raw_branch)
@@ -63,7 +64,7 @@ def get_repo_name(ctx, repo_path):
 
 
 def get_current_git_branch(repo_path):
-    with cd(repo_path):
+    with utils.cd(repo_path):
         raw_branch = subprocess.check_output("git status | head -1",
                                              shell=True)
         branch = parse_raw_git_branch(raw_branch)
@@ -73,7 +74,7 @@ def get_current_git_branch(repo_path):
 def create_git_branch(ctx, repo_path, branch_name):
     repo_name = get_repo_name(ctx, repo_path)
     click.echo("Creating branch {0} for {1}".format(branch_name, repo_name))
-    with cd(repo_path):
+    with utils.cd(repo_path):
         os.system("git checkout -b {}".format(branch_name))
 
 
@@ -101,7 +102,7 @@ def get_commit_message(ctx, repo_path):
 
 
 def get_changed_repo(repo):
-    with cd(repo["path"]):
+    with utils.cd(repo["path"]):
         diff = subprocess.check_output("git diff",
                                        shell=True)
         return not diff == b''

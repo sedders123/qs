@@ -2,7 +2,7 @@ import os
 import json
 import click
 
-from qs.constants import *
+import qs.constants as constants
 
 
 class cd:
@@ -37,14 +37,14 @@ def save_file(file, contents):
 
 
 def create_file(file):
-    if not os.path.exists(APP_DIR):
-        os.makedirs(APP_DIR)
-    if file[len(APP_DIR):] == "config.json":
+    if not os.path.exists(constants.APP_DIR):
+        os.makedirs(constants.APP_DIR)
+    if file[len(constants.APP_DIR):] == "config.json":
         file_contents = {
                          'BASE_DIR': os.path.expanduser("~/Projects/"),
                          'GITHUB_TOKEN': ""
                         }
-    elif file[len(APP_DIR):] == "projects.json":
+    elif file[len(constants.APP_DIR):] == "projects.json":
         file_contents = {}
     save_file(file, file_contents)
     return file_contents

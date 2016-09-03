@@ -1,10 +1,10 @@
 import click
 import os
 
-from qs.constants import *
-from qs.helpers import *
-from qs.utils import *
-from qs.git import *
+import qs.constants as constants
+import qs.helpers as helpers
+import qs.utils as utils
+import qs.git as git
 import qs.github as github
 
 
@@ -14,7 +14,7 @@ def _edit_config(ctx, base_dir, github_token):
         config["BASE_DIR"] = base_dir
     if github_token:
         config["GITHUB_TOKEN"] = github_token
-    save_file(CONFIG_PATH, config)
+    utils.save_file(constants.CONFIG_PATH, config)
 
 
 def _sync_projects(ctx, projects):
@@ -24,9 +24,9 @@ def _sync_projects(ctx, projects):
 
 def _sync_project(ctx, project):
     upstream = project["upstream"]
-    repo_paths = get_repo_paths(project["repos"])
+    repo_paths = git.get_repo_paths(project["repos"])
     click.echo(repo_paths)
-    sync_repos(ctx, repo_paths, upstream)
+    git.sync_repos(ctx, repo_paths, upstream)
 
 
 def _create_project(ctx, name, repos, upstream):
@@ -34,7 +34,7 @@ def _create_project(ctx, name, repos, upstream):
     if upstream is None:
         upstream = "upstream"
     projects[name] = {"repos": repos, "stories": [], "upstream": upstream}
-    save_file(PROJECTS_PATH, projects)
+    utils.save_file(constants.PROJECTS_PATH, projects)
 
 
 def _create_story(ctx, story_id, description, project_name):
@@ -43,11 +43,11 @@ def _create_story(ctx, story_id, description, project_name):
     stories = projects[project_name]["stories"]
     upstream = projects[project_name]["upstream"]
     for repo in repos:
-        sync_repo(ctx, repo["path"], upstream)
-        create_story_branch(ctx, repo["path"], story_id, description)
+        git.sync_repo(ctx, repo["path"], upstream)
+        helpers.create_story_branch(ctx, repo["path"], story_id, description)
     story = {"id": story_id, "description": description, "status": "OPEN"}
     stories.append(story)
-    save_stories(ctx, project_name, stories)
+    helpers.save_stories(ctx, project_name, stories)
 
 
 @click.group()
@@ -55,8 +55,8 @@ def _create_story(ctx, story_id, description, project_name):
 def main(ctx):
     """A simple CLI to aid in common, repetitive development tasks"""
     ctx.obj = {}
-    ctx.obj['CONFIG'] = load_file(CONFIG_PATH)
-    ctx.obj['PROJECTS'] = load_file(PROJECTS_PATH)
+    ctx.obj['CONFIG'] = utils.load_file(constants.CONFIG_PATH)
+    ctx.obj['PROJECTS'] = utils.load_file(constants.PROJECTS_PATH)
 
 
 @main.command()
@@ -99,8 +99,8 @@ def project(ctx):
 @click.pass_context
 def project_add(ctx, name, repos, upstream):
     raw_repo_list = list(repos)
-    repo_list = get_full_path_repo_list(ctx, raw_repo_list)
-    repos = create_repos(repo_list)
+    repo_list = helpers.get_full_path_repo_list(ctx, raw_repo_list)
+    repos = git.create_repos(repo_list)
     _create_project(ctx, name, repos, upstream)
 
 
@@ -134,11 +134,11 @@ def story_new(ctx, story_id, description_tuple, project):
     description = " ".join(description_list)
     if not project:
         cwd = os.getcwd()
-        project = get_project(ctx, cwd)
-    if can_create_story(ctx, project):
+        project = helpers.get_project(ctx, cwd)
+    if helpers.can_create_story(ctx, project):
         _create_story(ctx, story_id, description, project)
     else:
-        current_id, current_description = get_current_story(ctx, project)
+        current_id, current_description = helpers.get_current_story(ctx, project)
         click.echo("Story {0} {1} is currently in progress for this project"
                    .format(current_id, current_description))
 
@@ -149,15 +149,16 @@ def story_new(ctx, story_id, description_tuple, project):
 def story_push(ctx, project):
     if not project:
         cwd = os.getcwd()
-        project = get_project(ctx, cwd)
-    story_id, description = get_current_story(ctx, project)
+        project = helpers.get_project(ctx, cwd)
+    story_id, description = helpers.get_current_story(ctx, project)
     changed_repos = get_changed_repos(ctx, project)
     process_unused_repos(ctx, project, changed_repos)
     for repo in changed_repos:
-        sync_repo(ctx, repo["path"], ctx.obj["PROJECTS"][project]["upstream"])
-        commit_message = get_commit_message(ctx, repo["path"])
-        git_stage_all(repo["path"])
-        git_commit(repo["path"], commit_message)
-        current_branch = get_current_git_branch(repo["path"])
-        git_push_branch(repo["path"], current_branch)
+        git.sync_repo(ctx, repo["path"],
+                      ctx.obj["PROJECTS"][project]["upstream"])
+        commit_message = git.get_commit_message(ctx, repo["path"])
+        git.git_stage_all(repo["path"])
+        git.git_commit(repo["path"], commit_message)
+        current_branch = git.get_current_git_branch(repo["path"])
+        git.git_push_branch(repo["path"], current_branch)
         github.create_github_pull_request(ctx, repo)

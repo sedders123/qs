@@ -2,7 +2,6 @@ import click
 import requests
 import os
 
-import qs.utils as utils
 import qs.git as git
 import qs.helpers as helpers
 

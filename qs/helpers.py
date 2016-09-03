@@ -1,7 +1,9 @@
 import click
+import os
 
-from qs.utils import *
-from qs.git import *
+import qs.utils as utils
+import qs.git as git
+import qs.constants as constants
 
 
 def get_full_path_dir_list(ctx, dirs, warn=False):
@@ -24,7 +26,7 @@ def get_full_path_dir_list(ctx, dirs, warn=False):
 def get_full_path_repo_list(ctx, repo_list):
     full_path_repo_list = []
     dir_list = get_full_path_dir_list(ctx, repo_list, warn=True)
-    full_path_repo_list = get_git_repos(dir_list, warn=True)
+    full_path_repo_list = git.get_git_repos(dir_list, warn=True)
     if os.name == "nt":
         windows_full_path_repo_list = []
         for repo in full_path_repo_list:
@@ -62,16 +64,16 @@ def get_desired_project(possible_projects):
 
 def create_story_branch(ctx, repo, story_id, description):
     branch_name = story_id + "_" + description.replace(' ', '_')
-    current_branch = get_current_git_branch(repo)
+    current_branch = git.get_current_git_branch(repo)
     if current_branch == "master":
-        create_git_branch(ctx, repo, branch_name)
+        git.create_git_branch(ctx, repo, branch_name)
     else:
-        repo_name = get_repo_name(ctx, repo)
+        repo_name = git.get_repo_name(ctx, repo)
         click.echo("{} is currently on branch {}"
                    .format(repo_name, current_branch))
         response = click.confirm("Create new branch anyway?")
         if response:
-            create_git_branch(ctx, repo, branch_name)
+            git.create_git_branch(ctx, repo, branch_name)
         else:
             click.echo("Skipping repositry {}".format(repo_name))
 
@@ -88,7 +90,7 @@ def can_create_story(ctx, project):
 def save_stories(ctx, project, stories):
     projects = ctx.obj["PROJECTS"]
     projects[project]["stories"] = stories
-    save_file(PROJECTS_PATH, projects)
+    utils.save_file(constants.PROJECTS_PATH, projects)
 
 
 def get_current_story(ctx, project):
