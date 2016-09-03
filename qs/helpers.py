@@ -34,11 +34,11 @@ def get_full_path_repo_list(ctx, repo_list):
     return full_path_repo_list
 
 
-def get_project(ctx, cwd):
+def get_project(ctx, path):
     projects = ctx.obj["PROJECTS"]
     possible_projects = []
     for possible_project in projects:
-        if cwd in projects[possible_project]["repos"][0]["path"]:
+        if path in projects[possible_project]["repos"][0]["path"]:
             possible_projects.append(possible_project)
     if len(possible_projects) == 1:
         project = possible_projects[0]

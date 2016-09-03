@@ -4,40 +4,40 @@ import subprocess
 from qs.utils import *
 
 
-def git_checkout(repo, branch):
-    with cd(repo):
+def git_checkout(repo_path, branch):
+    with cd(repo_path):
         os.system("git checkout {}".format(branch))
 
 
-def git_delete_branch(repo, branch):
-    with cd(repo):
+def git_delete_branch(repo_path, branch):
+    with cd(repo_path):
         os.system("git branch -d {}".format(branch))
 
 
-def git_stage_all(repo):
-    with cd(repo):
+def git_stage_all(repo_path):
+    with cd(repo_path):
         os.system("git add .")
 
 
-def git_commit(repo, commit_message):
-    with cd(repo):
+def git_commit(repo_path, commit_message):
+    with cd(repo_path):
         os.system("git commit -m '{0}'".format(commit_message))
 
 
-def git_push_branch(repo, branch):
-    with cd(repo):
+def git_push_branch(repo_path, branch):
+    with cd(repo_path):
         os.system("git push origin {0}".format(branch))
 
 
-def git_list_remotes(repo):
-    with cd(repo):
+def git_list_remotes(repo_path):
+    with cd(repo_path):
         return subprocess.check_output("git remote -v", shell=True)
 
 
-def sync_repo(ctx, repo, upstream):
-    repo_name = get_repo_name(ctx, repo)
+def sync_repo(ctx, repo_path, upstream):
+    repo_name = get_repo_name(ctx, repo_path)
     click.echo("Synching Repositry: {}".format(repo_name))
-    with cd(repo):
+    with cd(repo_path):
         os.system("git pull {} master".format(upstream))
     click.echo("-"*80)  # Fill terminal
 
@@ -58,22 +58,22 @@ def parse_raw_git_branch(raw_branch):
     return branch
 
 
-def get_repo_name(ctx, repo):
-    return repo.split("/")[-1]
+def get_repo_name(ctx, repo_path):
+    return repo_path.split("/")[-1]
 
 
-def get_current_git_branch(repo):
-    with cd(repo):
+def get_current_git_branch(repo_path):
+    with cd(repo_path):
         raw_branch = subprocess.check_output("git status | head -1",
                                              shell=True)
         branch = parse_raw_git_branch(raw_branch)
     return branch
 
 
-def create_git_branch(ctx, repo, branch_name):
-    repo_name = get_repo_name(ctx, repo)
+def create_git_branch(ctx, repo_path, branch_name):
+    repo_name = get_repo_name(ctx, repo_path)
     click.echo("Creating branch {0} for {1}".format(branch_name, repo_name))
-    with cd(repo):
+    with cd(repo_path):
         os.system("git checkout -b {}".format(branch_name))
 
 
@@ -94,25 +94,25 @@ def get_repo_paths(repos):
     return paths
 
 
-def get_commit_message(ctx, repo):
-    repo_name = get_repo_name(ctx, repo)
+def get_commit_message(ctx, repo_path):
+    repo_name = get_repo_name(ctx, repo_path)
     commit_message = click.prompt("Please enter a commit message")
     return commit_message
 
 
 def get_changed_repo(repo):
-    with cd(repo):
+    with cd(repo["path"]):
         diff = subprocess.check_output("git diff",
                                        shell=True)
-        return diff == b''
+        return not diff == b''
 
 
 def get_changed_repos(ctx, project):
     changed_repos = []
-    repos = ctx.obj["PROJECTS"][project][repos]
-    for repo in repo:
-        get_changed_repo(repo)
-        changed_repos.append(repo)
+    repos = ctx.obj["PROJECTS"][project]["repos"]
+    for repo in repos:
+        if get_changed_repo(repo):
+            changed_repos.append(repo)
     return changed_repos
 
 
@@ -125,8 +125,8 @@ def process_unused_repos(ctx, project, changed_repos):
             git_delete_branch(repo, current_branch)
 
 
-def get_remotes(repo):
-    raw_remotes = git_list_remotes(repo)
+def get_remotes(repo_path):
+    raw_remotes = git_list_remotes(repo_path)
     return parse_raw_git_remotes(raw_remotes)
 
 
@@ -159,5 +159,6 @@ def parse_git_remote_url(remote_url):
     if "@" in remote_url:
         remote = remote_url.split(":")[1]
         remote_owner = remote.split("/")[0]
-        remote_repo = remote.split("/")[1]
+        remote_repo_full = remote.split("/")[1]
+        remote_repo = remote_repo_full.split(".git")[0]
     return remote_owner, remote_repo

@@ -5,7 +5,7 @@ from qs.constants import *
 from qs.helpers import *
 from qs.utils import *
 from qs.git import *
-import qs.github
+import qs.github as github
 
 
 def _edit_config(ctx, base_dir, github_token):
@@ -25,6 +25,7 @@ def _sync_projects(ctx, projects):
 def _sync_project(ctx, project):
     upstream = project["upstream"]
     repo_paths = get_repo_paths(project["repos"])
+    click.echo(repo_paths)
     sync_repos(ctx, repo_paths, upstream)
 
 
@@ -150,13 +151,13 @@ def story_push(ctx, project):
         cwd = os.getcwd()
         project = get_project(ctx, cwd)
     story_id, description = get_current_story(ctx, project)
-    changed_repos = get_changed_repos(ctx, project)
-    process_unused_repos(ctx, project, changed_repos)
+    changed_repos = ctx.obj["PROJECTS"][project]["repos"]  # get_changed_repos(ctx, project)
+    # process_unused_repos(ctx, project, changed_repos)
     for repo in changed_repos:
-        sync_repo(repo["path"])
-        commit_message = get_commit_message(ctx, repo)
-        git_stage_all(repo["path"])
-        git_commit(repo["path"], commit_message)
-        current_branch = get_current_git_branch(repo["path"])
-        git_push_branch(repo["path"], current_branch)
-        # TODO: _github_create_pull_request(repo)
+        #sync_repo(ctx, repo["path"], ctx.obj["PROJECTS"][project]["upstream"])
+        #commit_message = get_commit_message(ctx, repo["path"])
+        #git_stage_all(repo["path"])
+        #git_commit(repo["path"], commit_message)
+        #current_branch = get_current_git_branch(repo["path"])
+        #git_push_branch(repo["path"], current_branch)
+        github.create_github_pull_request(ctx, repo)
