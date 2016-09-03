@@ -38,8 +38,8 @@ def post_github_pull_request(ctx, remote_owner, remote_repo, request_body):
     url = GITHUB_API_BASE + endpoint
     # Used for debugging
     # req = requests.Request('POST', url,
-    #                       headers={'Authorization': 'token {}'.format(token)},
-    #                       json=request_body)
+    #                      headers={'Authorization': 'token {}'.format(token)},
+    #                      json=request_body)
     # prepared = req.prepare()
     # pretty_print_POST(prepared)
     r = requests.post(url,
