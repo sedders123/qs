@@ -56,6 +56,12 @@ def _create_story(ctx, story_id, description, project_name):
     helpers.save_stories(ctx, project_name, stories)
 
 
+def _delete_project(ctx, project):
+    projects = ctx["PROJECTS"]
+    projects.pop(project)
+    utils.save_file(constants.PROJECTS_PATH, projects)
+
+
 @click.group()
 @click.pass_context
 def main(ctx):
@@ -128,6 +134,21 @@ def project_list(ctx, name):
             click.echo("Project '{}' could not be found".format(name))
     else:
         click.echo(ctx.obj["PROJECTS"])
+
+
+@project.command(name="remove")
+@click.argument('name')
+@click.pass_context
+def project_remove(ctx, name):
+    """Remove a project"""
+    if not helpers.can_create_story(ctx, name):
+        story_id, story_description = helpers.get_current_story(ctx, name)
+        click.echo("Story {0}: {1} is currently open".format(story_id,
+                                                             story_description))
+        confirm = click.confirm("Are you sure you want to do this?")
+        if not confirm:
+            return
+    _delete_project(project)
 
 
 @main.group()
